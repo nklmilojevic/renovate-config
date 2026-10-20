@@ -30,6 +30,11 @@ jobs:
   vendor-hash:
     name: Update vendorHash
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        # An explicit shell adds -o pipefail, so a failed nix build piped
+        # through tee fails the if.
+        shell: bash
     steps:
       - name: Generate token
         id: app-token
