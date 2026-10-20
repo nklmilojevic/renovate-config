@@ -1,0 +1,92 @@
+name: Go vendorHash
+
+# Renovate bumps go.mod and go.sum but cannot recompute the vendorHash that
+# buildGoModule pins in package.nix. Callers run this on Renovate pull requests;
+# it rebuilds the Go modules derivation, writes the hash Nix reports and pushes
+# the fix to the pull request branch with the Renovate app's token, so CI runs
+# again on the fixed commit.
+
+on:
+  workflow_call:
+    inputs:
+      package-file:
+        description: File that holds the vendorHash line
+        type: string
+        default: package.nix
+      attr:
+        description: Flake attribute of the buildGoModule package
+        type: string
+        default: .#default
+    secrets:
+      app-id:
+        required: true
+      app-private-key:
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  vendor-hash:
+    name: Update vendorHash
+    runs-on: ubuntu-latest
+    steps:
+      - name: Generate token
+        id: app-token
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        with:
+          app-id: ${{ secrets.app-id }}
+          private-key: ${{ secrets.app-private-key }}
+          repositories: ${{ github.event.repository.name }}
+          permission-contents: write
+
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.head_ref }}
+          token: ${{ steps.app-token.outputs.token }}
+
+      - name: Install Nix
+        uses: cachix/install-nix-action@448cde739abec1eaf0646249e3d25bb8d9bc7702 # v31.11.2
+        with:
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+            access-tokens = github.com=${{ steps.app-token.outputs.token }}
+
+      - name: Recompute vendorHash
+        env:
+          ATTR: ${{ inputs.attr }}
+          PACKAGE_FILE: ${{ inputs.package-file }}
+        run: |
+          if nix build "${ATTR}.goModules" --no-link 2>&1 | tee "$RUNNER_TEMP/build.log"; then
+            echo "vendorHash in ${PACKAGE_FILE} is current"
+            exit 0
+          fi
+          got=$(sed -nE 's/^[[:space:]]*got:[[:space:]]*(sha256-[A-Za-z0-9+/=]+).*/\1/p' "$RUNNER_TEMP/build.log" | tail -n1)
+          if [ -z "$got" ]; then
+            echo "::error::nix build failed for a reason other than a vendorHash mismatch"
+            exit 1
+          fi
+          sed -i -E "s|vendorHash = \"sha256-[A-Za-z0-9+/=]+\";|vendorHash = \"${got}\";|" "$PACKAGE_FILE"
+          if git diff --quiet -- "$PACKAGE_FILE"; then
+            echo "::error::no vendorHash = \"sha256-...\"; line in ${PACKAGE_FILE}"
+            exit 1
+          fi
+          nix build "${ATTR}.goModules" --no-link
+
+      - name: Commit and push
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          APP_SLUG: ${{ steps.app-token.outputs.app-slug }}
+          PACKAGE_FILE: ${{ inputs.package-file }}
+        run: |
+          if git diff --quiet -- "$PACKAGE_FILE"; then
+            exit 0
+          fi
+          user_id=$(gh api "/users/${APP_SLUG}%5Bbot%5D" --jq .id)
+          git config user.name "${APP_SLUG}[bot]"
+          git config user.email "${user_id}+${APP_SLUG}[bot]@users.noreply.github.com"
+          git add -- "$PACKAGE_FILE"
+          git commit -m "fix(deps): update vendorHash" \
+            -m "The Go module update changed the vendored dependencies, so the vendorHash pinned in ${PACKAGE_FILE} no longer matched."
+          git push origin "HEAD:${GITHUB_HEAD_REF}"
