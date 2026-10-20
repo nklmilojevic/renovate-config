@@ -19,5 +19,8 @@
   ],
   "commitBodyTable": true,
   "rebaseWhen": "auto",
+  "gitIgnoredAuthors": [
+    "192236397+homelab-crafter[bot]@users.noreply.github.com"
+  ],
   "platformCommit": "enabled"
 }
