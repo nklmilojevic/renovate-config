@@ -7,13 +7,16 @@
     ":disableRateLimiting",
     ":enablePreCommit",
     ":separatePatchReleases",
+    "helpers:pinGitHubActionDigests",
     "github>nklmilojevic/renovate-config:custom-managers.json5",
     "github>nklmilojevic/renovate-config:automerge-github-actions",
     "github>nklmilojevic/renovate-config:commit-message",
     "github>nklmilojevic/renovate-config:pr-labels"
   ],
   "timezone": "Europe/Belgrade",
-  "dependencyDashboardTitle": "Renovate Dashboard",
+  "dependencyDashboard": {
+    "title": "Renovate Dashboard"
+  },
   "suppressNotifications": [
     "prIgnoreNotification"
   ],
