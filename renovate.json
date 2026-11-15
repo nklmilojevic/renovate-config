@@ -1,0 +1,14 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "local>nklmilojevic/renovate-config",
+    "helpers:pinGitHubActionDigests"
+  ],
+  "packageRules": [
+    {
+      "description": "Callers hand the reusable workflows the Renovate app's private key, and this repo has no CI to catch a bad Action: their updates are reviewed, never merged automatically.",
+      "matchFileNames": [".github/workflows/**"],
+      "automerge": false
+    }
+  ]
+}
