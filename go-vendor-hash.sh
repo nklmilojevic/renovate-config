@@ -12,10 +12,32 @@
 # hash can reuse old modules from the store or a binary cache and pass. The
 # script builds with a fake hash instead, which nothing can satisfy, so Nix
 # always vendors the modules again and reports the real hash.
+#
+# In the Renovate runner, nix comes from containerbase, whose wrapper puts the
+# store below /tmp/containerbase. Binary caches only serve /nix/store, so that
+# store would build the whole toolchain from source. With a writable /nix (an
+# emptyDir in the RenovateJob), the script runs the real binary behind the
+# wrapper against /nix/store instead, single-user and without a sandbox.
 set -euo pipefail
 
 package_file=${1:-package.nix}
 attr=${2:-.#default}
+
+nix_cmd=(nix)
+if [ -n "${NIX_STORE_DIR:-}" ] && [ "$NIX_STORE_DIR" != /nix/store ]; then
+  if [ ! -d /nix ] || [ ! -w /nix ]; then
+    echo "error: the nix store is ${NIX_STORE_DIR}, which binary caches cannot serve; mount a writable volume at /nix" >&2
+    exit 1
+  fi
+  wrapper=$(command -v nix)
+  real_nix=$(sed -nE 's|^(/[^ ]+/bin/nix) "\$@"$|\1|p' "$wrapper" | tail -n1)
+  if [ -z "$real_nix" ] || [ ! -x "$real_nix" ]; then
+    echo "error: cannot find the nix binary behind ${wrapper}" >&2
+    exit 1
+  fi
+  export NIX_STORE_DIR=/nix/store NIX_STATE_DIR=/nix/var/nix NIX_LOG_DIR=/nix/var/log/nix
+  nix_cmd=("$real_nix" --option sandbox false --option build-users-group '')
+fi
 
 fake_hash="sha256-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
 hash_line='vendorHash = "sha256-[A-Za-z0-9+/=]+";'
@@ -39,7 +61,7 @@ trap cleanup EXIT
 trap 'exit 130' INT TERM
 
 build() {
-  nix --extra-experimental-features 'nix-command flakes' \
+  "${nix_cmd[@]}" --extra-experimental-features 'nix-command flakes' \
     build "${attr}.goModules" --no-link --no-write-lock-file >"$log" 2>&1
 }
 
