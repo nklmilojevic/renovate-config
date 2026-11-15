@@ -40,6 +40,26 @@
     {
       "matchManagers": ["github-actions"],
       "addLabels": ["renovate/github-action"]
+    },
+    {
+      "matchManagers": ["gomod"],
+      "addLabels": ["renovate/go"]
+    },
+    {
+      "matchManagers": ["cargo"],
+      "addLabels": ["renovate/rust"]
+    },
+    {
+      "matchManagers": ["npm", "bun"],
+      "addLabels": ["renovate/npm"]
+    },
+    {
+      "matchManagers": ["nix"],
+      "addLabels": ["renovate/nix"]
+    },
+    {
+      "matchUpdateTypes": ["lockFileMaintenance"],
+      "addLabels": ["renovate/lock-file"]
     }
   ]
 }

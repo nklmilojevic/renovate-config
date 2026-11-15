@@ -8,6 +8,7 @@
     ":enablePreCommit",
     ":separatePatchReleases",
     "helpers:pinGitHubActionDigests",
+    "abandonments:recommended",
     "github>nklmilojevic/renovate-config:custom-managers.json5",
     "github>nklmilojevic/renovate-config:automerge-github-actions",
     "github>nklmilojevic/renovate-config:commit-message",
@@ -15,13 +16,21 @@
   ],
   "timezone": "Europe/Belgrade",
   "dependencyDashboard": {
-    "title": "Renovate Dashboard"
+    "title": "Renovate Dashboard",
+    "osvVulnerabilitySummary": "unresolved"
   },
   "suppressNotifications": [
     "prIgnoreNotification"
   ],
   "commitBodyTable": true,
   "rebaseWhen": "auto",
+  "configMigration": true,
+  "osvVulnerabilityAlerts": true,
+  "vulnerabilityAlerts": {
+    "addLabels": [
+      "security"
+    ]
+  },
   "gitIgnoredAuthors": [
     "192236397+homelab-crafter[bot]@users.noreply.github.com"
   ],
