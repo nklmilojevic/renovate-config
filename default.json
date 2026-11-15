@@ -29,7 +29,8 @@
   "vulnerabilityAlerts": {
     "addLabels": [
       "security"
-    ]
+    ],
+    "groupName": "{{#if (equals manager 'gomod')}}Go modules{{else if (equals manager 'cargo')}}Rust crates{{else if (or (equals manager 'npm') (equals manager 'bun'))}}npm packages{{else}}security updates{{/if}}"
   },
   "gitIgnoredAuthors": [
     "192236397+homelab-crafter[bot]@users.noreply.github.com"
