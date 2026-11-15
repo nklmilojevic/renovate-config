@@ -47,7 +47,7 @@
       "separateMinorPatch": false
     },
     {
-      "description": "Every Go module update edits go.mod and go.sum, so separate PRs conflict as soon as one merges. Non-major updates land as one PR; majors stay separate. The go toolchain (golang-version datasource) keeps its own PR.",
+      "description": "Every Go module update edits go.mod and go.sum, so separate PRs conflict as soon as one merges. Non-major updates land as one PR; majors stay separate. The go toolchain (golang-version datasource) keeps its own PR. The table adds the Update column, which mergeConfidence:age-confidence-badges drops for go and npm, so each row shows whether it is a patch or a minor.",
       "matchManagers": [
         "gomod"
       ],
@@ -59,7 +59,14 @@
         "patch",
         "digest"
       ],
-      "groupName": "Go modules"
+      "groupName": "Go modules",
+      "prBodyColumns": [
+        "Package",
+        "Update",
+        "Change",
+        "Age",
+        "Confidence"
+      ]
     },
     {
       "description": "Every crate update edits Cargo.lock, so separate PRs conflict as soon as one merges. Non-major updates land as one PR; majors stay separate.",
@@ -76,7 +83,7 @@
       "groupName": "Rust crates"
     },
     {
-      "description": "Every npm package update edits the package.json and lock file of its project, so separate PRs conflict as soon as one merges. Non-major updates land as one PR; majors stay separate.",
+      "description": "Every npm package update edits the package.json and lock file of its project, so separate PRs conflict as soon as one merges. Non-major updates land as one PR; majors stay separate. The table adds the Update column, which mergeConfidence:age-confidence-badges drops for go and npm, so each row shows whether it is a patch or a minor.",
       "matchManagers": [
         "npm",
         "bun"
@@ -88,7 +95,14 @@
         "minor",
         "patch"
       ],
-      "groupName": "npm packages"
+      "groupName": "npm packages",
+      "prBodyColumns": [
+        "Package",
+        "Update",
+        "Change",
+        "Age",
+        "Confidence"
+      ]
     }
   ]
 }
