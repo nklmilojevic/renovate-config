@@ -22,5 +22,61 @@
   "gitIgnoredAuthors": [
     "192236397+homelab-crafter[bot]@users.noreply.github.com"
   ],
-  "platformCommit": "enabled"
+  "platformCommit": "enabled",
+  "packageRules": [
+    {
+      "description": "Undo :separatePatchReleases for managers whose updates share a lock file. It splits minor and patch into separate lookup buckets, which runs before the update type is known, so this rule must not match on update type. Without it a group splits into <group> and patch-<group> branches.",
+      "matchManagers": [
+        "gomod",
+        "cargo",
+        "npm",
+        "bun"
+      ],
+      "separateMinorPatch": false
+    },
+    {
+      "description": "Every Go module update edits go.mod and go.sum, so separate PRs conflict as soon as one merges. Non-major updates land as one PR; majors stay separate. The go toolchain (golang-version datasource) keeps its own PR.",
+      "matchManagers": [
+        "gomod"
+      ],
+      "matchDatasources": [
+        "go"
+      ],
+      "matchUpdateTypes": [
+        "minor",
+        "patch",
+        "digest"
+      ],
+      "groupName": "Go modules"
+    },
+    {
+      "description": "Every crate update edits Cargo.lock, so separate PRs conflict as soon as one merges. Non-major updates land as one PR; majors stay separate.",
+      "matchManagers": [
+        "cargo"
+      ],
+      "matchDatasources": [
+        "crate"
+      ],
+      "matchUpdateTypes": [
+        "minor",
+        "patch"
+      ],
+      "groupName": "Rust crates"
+    },
+    {
+      "description": "Every npm package update edits the package.json and lock file of its project, so separate PRs conflict as soon as one merges. Non-major updates land as one PR; majors stay separate.",
+      "matchManagers": [
+        "npm",
+        "bun"
+      ],
+      "matchDatasources": [
+        "npm"
+      ],
+      "matchUpdateTypes": [
+        "minor",
+        "patch"
+      ],
+      "groupName": "npm packages"
+    }
+  ]
 }
