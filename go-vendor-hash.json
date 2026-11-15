@@ -1,0 +1,19 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "packageRules": [
+    {
+      "description": "Go updates change the vendored modules, so the vendorHash that buildGoModule pins in package.nix stops matching. Recompute it in Renovate's own commit, so callers need no app key in their repo. The command must match RENOVATE_ALLOWED_COMMANDS on the self-hosted runner.",
+      "matchManagers": ["gomod"],
+      "postUpgradeTasks": {
+        "commands": [
+          "nix --extra-experimental-features nix-command --extra-experimental-features flakes run git+https://github.com/nklmilojevic/renovate-config#go-vendor-hash"
+        ],
+        "fileFilters": ["package.nix"],
+        "executionMode": "branch",
+        "installTools": {
+          "nix": {}
+        }
+      }
+    }
+  ]
+}
