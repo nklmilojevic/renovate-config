@@ -18,12 +18,17 @@
 # store would build the whole toolchain from source. With a writable /nix (an
 # emptyDir in the RenovateJob), the script runs the real binary behind the
 # wrapper against /nix/store instead, single-user and without a sandbox.
+# The pod's fsGroup makes /tmp set-group-ID, so build directories under it
+# inherit the bit, and Nix's syscall filter then refuses the chmod that unpacks
+# the source ("cp: setting permissions for 'source': Operation not permitted").
+# Builds there run in a build-dir with the bit cleared.
 set -euo pipefail
 
 package_file=${1:-package.nix}
 attr=${2:-.#default}
 
 nix_cmd=(nix)
+runner_store=false
 if [ -n "${NIX_STORE_DIR:-}" ] && [ "$NIX_STORE_DIR" != /nix/store ]; then
   if [ ! -d /nix ] || [ ! -w /nix ]; then
     echo "error: the nix store is ${NIX_STORE_DIR}, which binary caches cannot serve; mount a writable volume at /nix" >&2
@@ -37,6 +42,7 @@ if [ -n "${NIX_STORE_DIR:-}" ] && [ "$NIX_STORE_DIR" != /nix/store ]; then
   fi
   export NIX_STORE_DIR=/nix/store NIX_STATE_DIR=/nix/var/nix NIX_LOG_DIR=/nix/var/log/nix
   nix_cmd=("$real_nix" --option sandbox false --option build-users-group '')
+  runner_store=true
 fi
 
 fake_hash="sha256-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
@@ -44,6 +50,12 @@ hash_line='vendorHash = "sha256-[A-Za-z0-9+/=]+";'
 
 workdir=$(mktemp -d)
 log="$workdir/build.log"
+
+if [ "$runner_store" = true ]; then
+  mkdir "$workdir/build"
+  chmod g-s "$workdir/build"
+  nix_cmd+=(--option build-dir "$workdir/build")
+fi
 
 restore() {
   cp "$workdir/original" "$package_file"
