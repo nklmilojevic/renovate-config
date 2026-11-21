@@ -27,6 +27,20 @@ set -euo pipefail
 package_file=${1:-package.nix}
 attr=${2:-.#default}
 
+resolve_real_nix() {
+  local file=$1
+  local bin target
+  bin=$(sed -nE 's#^(exec (-a "\$0" )?)?(/[^ ]+/bin/nix) "\$@"$#\3#p' "$file" | tail -n1)
+  if [ -n "$bin" ]; then
+    printf '%s\n' "$bin"
+    return 0
+  fi
+  target=$(sed -nE 's#^(\.|source) (/[^ ]+)$#\2#p' "$file" | tail -n1)
+  if [ -n "$target" ] && [ -f "$target" ]; then
+    sed -nE 's#^(exec (-a "\$0" )?)?(/[^ ]+/bin/nix) "\$@"$#\3#p' "$target" | tail -n1
+  fi
+}
+
 nix_cmd=(nix)
 runner_store=false
 if [ -n "${NIX_STORE_DIR:-}" ] && [ "$NIX_STORE_DIR" != /nix/store ]; then
@@ -35,7 +49,7 @@ if [ -n "${NIX_STORE_DIR:-}" ] && [ "$NIX_STORE_DIR" != /nix/store ]; then
     exit 1
   fi
   wrapper=$(command -v nix)
-  real_nix=$(sed -nE 's|^(/[^ ]+/bin/nix) "\$@"$|\1|p' "$wrapper" | tail -n1)
+  real_nix=$(resolve_real_nix "$wrapper")
   if [ -z "$real_nix" ] || [ ! -x "$real_nix" ]; then
     echo "error: cannot find the nix binary behind ${wrapper}" >&2
     exit 1
